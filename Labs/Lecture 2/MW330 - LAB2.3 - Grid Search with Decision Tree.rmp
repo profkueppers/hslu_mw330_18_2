@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?><process version="9.0.002">
+  <context>
+    <input/>
+    <output/>
+    <macros/>
+  </context>
+  <operator activated="true" class="process" compatibility="9.0.002" expanded="true" name="Process">
+    <parameter key="logverbosity" value="init"/>
+    <parameter key="random_seed" value="2001"/>
+    <parameter key="send_mail" value="never"/>
+    <parameter key="notification_email" value=""/>
+    <parameter key="process_duration_for_mail" value="30"/>
+    <parameter key="encoding" value="SYSTEM"/>
+    <process expanded="true">
+      <operator activated="true" class="concurrency:optimize_parameters_grid" compatibility="9.0.002" expanded="true" height="124" name="Optimize Parameters (Grid)" width="90" x="179" y="34">
+        <list key="parameters">
+          <parameter key="Decision Tree.maximal_depth" value="[1;20;20;linear]"/>
+        </list>
+        <parameter key="error_handling" value="fail on error"/>
+        <parameter key="log_performance" value="true"/>
+        <parameter key="log_all_criteria" value="false"/>
+        <parameter key="synchronize" value="false"/>
+        <parameter key="enable_parallel_execution" value="true"/>
+        <process expanded="true">
+          <operator activated="true" class="retrieve" compatibility="9.0.002" expanded="true" height="68" name="Retrieve Titanic" width="90" x="45" y="34">
+            <parameter key="repository_entry" value="//Samples/data/Titanic"/>
+          </operator>
+          <operator activated="true" class="set_role" compatibility="9.0.002" expanded="true" height="82" name="Set Role" width="90" x="179" y="34">
+            <parameter key="attribute_name" value="Survived"/>
+            <parameter key="target_role" value="label"/>
+            <list key="set_additional_roles"/>
+          </operator>
+          <operator activated="true" class="split_validation" compatibility="9.0.002" expanded="true" height="124" name="Validation" width="90" x="313" y="34">
+            <parameter key="create_complete_model" value="false"/>
+            <parameter key="split" value="relative"/>
+            <parameter key="split_ratio" value="0.7"/>
+            <parameter key="training_set_size" value="100"/>
+            <parameter key="test_set_size" value="-1"/>
+            <parameter key="sampling_type" value="shuffled sampling"/>
+            <parameter key="use_local_random_seed" value="false"/>
+            <parameter key="local_random_seed" value="1992"/>
+            <process expanded="true">
+              <operator activated="true" class="concurrency:parallel_decision_tree" compatibility="9.0.002" expanded="true" height="103" name="Decision Tree" width="90" x="246" y="34">
+                <parameter key="criterion" value="gain_ratio"/>
+                <parameter key="maximal_depth" value="4"/>
+                <parameter key="apply_pruning" value="true"/>
+                <parameter key="confidence" value="0.1"/>
+                <parameter key="apply_prepruning" value="true"/>
+                <parameter key="minimal_gain" value="0.01"/>
+                <parameter key="minimal_leaf_size" value="2"/>
+                <parameter key="minimal_size_for_split" value="4"/>
+                <parameter key="number_of_prepruning_alternatives" value="3"/>
+              </operator>
+              <connect from_port="training" to_op="Decision Tree" to_port="training set"/>
+              <connect from_op="Decision Tree" from_port="model" to_port="model"/>
+              <portSpacing port="source_training" spacing="0"/>
+              <portSpacing port="sink_model" spacing="0"/>
+              <portSpacing port="sink_through 1" spacing="0"/>
+            </process>
+            <process expanded="true">
+              <operator activated="true" class="apply_model" compatibility="9.0.002" expanded="true" height="82" name="Apply Model" width="90" x="179" y="34">
+                <list key="application_parameters"/>
+                <parameter key="create_view" value="false"/>
+              </operator>
+              <operator activated="true" class="performance_classification" compatibility="9.0.002" expanded="true" height="82" name="Performance" width="90" x="380" y="34">
+                <parameter key="main_criterion" value="first"/>
+                <parameter key="accuracy" value="true"/>
+                <parameter key="classification_error" value="false"/>
+                <parameter key="kappa" value="false"/>
+                <parameter key="weighted_mean_recall" value="false"/>
+                <parameter key="weighted_mean_precision" value="false"/>
+                <parameter key="spearman_rho" value="false"/>
+                <parameter key="kendall_tau" value="false"/>
+                <parameter key="absolute_error" value="false"/>
+                <parameter key="relative_error" value="false"/>
+                <parameter key="relative_error_lenient" value="false"/>
+                <parameter key="relative_error_strict" value="false"/>
+                <parameter key="normalized_absolute_error" value="false"/>
+                <parameter key="root_mean_squared_error" value="false"/>
+                <parameter key="root_relative_squared_error" value="false"/>
+                <parameter key="squared_error" value="false"/>
+                <parameter key="correlation" value="false"/>
+                <parameter key="squared_correlation" value="false"/>
+                <parameter key="cross-entropy" value="false"/>
+                <parameter key="margin" value="false"/>
+                <parameter key="soft_margin_loss" value="false"/>
+                <parameter key="logistic_loss" value="false"/>
+                <parameter key="skip_undefined_labels" value="true"/>
+                <parameter key="use_example_weights" value="true"/>
+                <list key="class_weights"/>
+              </operator>
+              <connect from_port="model" to_op="Apply Model" to_port="model"/>
+              <connect from_port="test set" to_op="Apply Model" to_port="unlabelled data"/>
+              <connect from_op="Apply Model" from_port="labelled data" to_op="Performance" to_port="labelled data"/>
+              <connect from_op="Performance" from_port="performance" to_port="averagable 1"/>
+              <portSpacing port="source_model" spacing="0"/>
+              <portSpacing port="source_test set" spacing="0"/>
+              <portSpacing port="source_through 1" spacing="0"/>
+              <portSpacing port="sink_averagable 1" spacing="0"/>
+              <portSpacing port="sink_averagable 2" spacing="0"/>
+            </process>
+          </operator>
+          <connect from_op="Retrieve Titanic" from_port="output" to_op="Set Role" to_port="example set input"/>
+          <connect from_op="Set Role" from_port="example set output" to_op="Validation" to_port="training"/>
+          <connect from_op="Validation" from_port="model" to_port="model"/>
+          <connect from_op="Validation" from_port="averagable 1" to_port="performance"/>
+          <portSpacing port="source_input 1" spacing="0"/>
+          <portSpacing port="sink_performance" spacing="0"/>
+          <portSpacing port="sink_model" spacing="0"/>
+          <portSpacing port="sink_output 1" spacing="0"/>
+        </process>
+      </operator>
+      <connect from_op="Optimize Parameters (Grid)" from_port="performance" to_port="result 1"/>
+      <connect from_op="Optimize Parameters (Grid)" from_port="model" to_port="result 2"/>
+      <portSpacing port="source_input 1" spacing="0"/>
+      <portSpacing port="sink_result 1" spacing="0"/>
+      <portSpacing port="sink_result 2" spacing="0"/>
+      <portSpacing port="sink_result 3" spacing="0"/>
+    </process>
+  </operator>
+</process>
