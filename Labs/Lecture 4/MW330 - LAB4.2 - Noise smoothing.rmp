@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?><process version="9.0.003">
+  <context>
+    <input/>
+    <output/>
+    <macros/>
+  </context>
+  <operator activated="true" class="process" compatibility="9.0.003" expanded="true" name="Process">
+    <parameter key="logverbosity" value="init"/>
+    <parameter key="random_seed" value="2001"/>
+    <parameter key="send_mail" value="never"/>
+    <parameter key="notification_email" value=""/>
+    <parameter key="process_duration_for_mail" value="30"/>
+    <parameter key="encoding" value="SYSTEM"/>
+    <process expanded="true">
+      <operator activated="true" class="retrieve" compatibility="9.0.003" expanded="true" height="68" name="Retrieve merged_orders" width="90" x="45" y="34">
+        <parameter key="repository_entry" value="//MW330/data/merged_orders"/>
+      </operator>
+      <operator activated="true" class="aggregate" compatibility="9.0.003" expanded="true" height="82" name="Aggregate" width="90" x="179" y="34">
+        <parameter key="use_default_aggregation" value="false"/>
+        <parameter key="attribute_filter_type" value="all"/>
+        <parameter key="attribute" value=""/>
+        <parameter key="attributes" value=""/>
+        <parameter key="use_except_expression" value="false"/>
+        <parameter key="value_type" value="attribute_value"/>
+        <parameter key="use_value_type_exception" value="false"/>
+        <parameter key="except_value_type" value="time"/>
+        <parameter key="block_type" value="attribute_block"/>
+        <parameter key="use_block_type_exception" value="false"/>
+        <parameter key="except_block_type" value="value_matrix_row_start"/>
+        <parameter key="invert_selection" value="false"/>
+        <parameter key="include_special_attributes" value="false"/>
+        <parameter key="default_aggregation_function" value="average"/>
+        <list key="aggregation_attributes">
+          <parameter key="quantity" value="sum"/>
+        </list>
+        <parameter key="group_by_attributes" value="order_date_order"/>
+        <parameter key="count_all_combinations" value="false"/>
+        <parameter key="only_distinct" value="false"/>
+        <parameter key="ignore_missings" value="true"/>
+      </operator>
+      <operator activated="true" class="multiply" compatibility="9.0.003" expanded="true" height="124" name="Multiply" width="90" x="313" y="34"/>
+      <operator activated="true" class="series:exponential_smoothing" compatibility="7.4.000" expanded="true" height="82" name="Exponential Smoothing" width="90" x="447" y="340">
+        <parameter key="attribute_name" value="sum(quantity)"/>
+        <parameter key="alpha" value="0.05"/>
+        <parameter key="ignore_missings" value="true"/>
+        <parameter key="keep_original_attribute" value="true"/>
+      </operator>
+      <operator activated="true" class="series:moving_average" compatibility="7.4.000" expanded="true" height="82" name="Moving Average" width="90" x="447" y="187">
+        <parameter key="attribute_name" value="sum(quantity)"/>
+        <parameter key="window_width" value="20"/>
+        <parameter key="aggregation_function" value="average"/>
+        <parameter key="ignore_missings" value="false"/>
+        <parameter key="result_position" value="end"/>
+        <parameter key="window_weighting" value="Rectangular"/>
+        <parameter key="keep_original_attribute" value="true"/>
+      </operator>
+      <operator activated="true" class="discretize_by_bins" compatibility="9.0.003" expanded="true" height="103" name="Discretize" width="90" x="447" y="34">
+        <parameter key="return_preprocessing_model" value="false"/>
+        <parameter key="create_view" value="false"/>
+        <parameter key="attribute_filter_type" value="single"/>
+        <parameter key="attribute" value="sum(quantity)"/>
+        <parameter key="attributes" value=""/>
+        <parameter key="use_except_expression" value="false"/>
+        <parameter key="value_type" value="numeric"/>
+        <parameter key="use_value_type_exception" value="false"/>
+        <parameter key="except_value_type" value="real"/>
+        <parameter key="block_type" value="value_series"/>
+        <parameter key="use_block_type_exception" value="false"/>
+        <parameter key="except_block_type" value="value_series_end"/>
+        <parameter key="invert_selection" value="false"/>
+        <parameter key="include_special_attributes" value="false"/>
+        <parameter key="number_of_bins" value="6"/>
+        <parameter key="define_boundaries" value="false"/>
+        <parameter key="range_name_type" value="long"/>
+        <parameter key="automatic_number_of_digits" value="true"/>
+        <parameter key="number_of_digits" value="3"/>
+      </operator>
+      <operator activated="true" class="concurrency:join" compatibility="9.0.003" expanded="true" height="82" name="Join" width="90" x="581" y="34">
+        <parameter key="remove_double_attributes" value="false"/>
+        <parameter key="join_type" value="inner"/>
+        <parameter key="use_id_attribute_as_key" value="false"/>
+        <list key="key_attributes">
+          <parameter key="order_date_order" value="order_date_order"/>
+        </list>
+        <parameter key="keep_both_join_attributes" value="false"/>
+      </operator>
+      <operator activated="true" class="aggregate" compatibility="9.0.003" expanded="true" height="82" name="Aggregate (2)" width="90" x="715" y="34">
+        <parameter key="use_default_aggregation" value="false"/>
+        <parameter key="attribute_filter_type" value="all"/>
+        <parameter key="attribute" value=""/>
+        <parameter key="attributes" value=""/>
+        <parameter key="use_except_expression" value="false"/>
+        <parameter key="value_type" value="attribute_value"/>
+        <parameter key="use_value_type_exception" value="false"/>
+        <parameter key="except_value_type" value="time"/>
+        <parameter key="block_type" value="attribute_block"/>
+        <parameter key="use_block_type_exception" value="false"/>
+        <parameter key="except_block_type" value="value_matrix_row_start"/>
+        <parameter key="invert_selection" value="false"/>
+        <parameter key="include_special_attributes" value="false"/>
+        <parameter key="default_aggregation_function" value="average"/>
+        <list key="aggregation_attributes">
+          <parameter key="sum(quantity)_from_ES2" value="average"/>
+        </list>
+        <parameter key="group_by_attributes" value="sum(quantity)"/>
+        <parameter key="count_all_combinations" value="false"/>
+        <parameter key="only_distinct" value="false"/>
+        <parameter key="ignore_missings" value="true"/>
+      </operator>
+      <connect from_op="Retrieve merged_orders" from_port="output" to_op="Aggregate" to_port="example set input"/>
+      <connect from_op="Aggregate" from_port="example set output" to_op="Multiply" to_port="input"/>
+      <connect from_op="Multiply" from_port="output 1" to_op="Discretize" to_port="example set input"/>
+      <connect from_op="Multiply" from_port="output 2" to_op="Moving Average" to_port="example set input"/>
+      <connect from_op="Multiply" from_port="output 3" to_op="Exponential Smoothing" to_port="example set input"/>
+      <connect from_op="Exponential Smoothing" from_port="example set output" to_port="result 3"/>
+      <connect from_op="Moving Average" from_port="example set output" to_port="result 2"/>
+      <connect from_op="Discretize" from_port="example set output" to_op="Join" to_port="left"/>
+      <connect from_op="Discretize" from_port="original" to_op="Join" to_port="right"/>
+      <connect from_op="Join" from_port="join" to_op="Aggregate (2)" to_port="example set input"/>
+      <connect from_op="Aggregate (2)" from_port="example set output" to_port="result 1"/>
+      <portSpacing port="source_input 1" spacing="0"/>
+      <portSpacing port="sink_result 1" spacing="0"/>
+      <portSpacing port="sink_result 2" spacing="0"/>
+      <portSpacing port="sink_result 3" spacing="0"/>
+      <portSpacing port="sink_result 4" spacing="0"/>
+    </process>
+  </operator>
+</process>
